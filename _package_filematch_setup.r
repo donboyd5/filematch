@@ -42,13 +42,14 @@ options(
   # usethis.protocol  = "ssh"
 )
 
-# toy package ----
-library(devtools)
-create_package("~/regexcite") # C:/Users/donbo/regexcite/
 
-# filematch ----
+# filematch development ----
+## packages needed for development process ----
 library(devtools)
+library(usethis)
+library(pkgload)
 library(fs)
+
 pdir <- r"(E:\R_projects\packages)"
 ppath <- path(pdir, "filematch")
 create_package(ppath)
@@ -56,8 +57,27 @@ create_package(ppath)
 # go to the RStudio session that was opened up
 use_git()
 
+usethis::use_r("get_distances") # creates empty new file with this name
+
+pkgload::load_all() # Ctrl+Shift+L make functions available WITHOUT putting them in global env
 
 
+# test filematch functions ----
+
+## packages needed for testing ----
+library(tidyverse)
+
+afile <- readRDS(here::here("data", "test_afile.rds"))
+bfile <- readRDS(here::here("data", "test_bfile.rds"))
+
+idvars <- c("pid", "weight")
+xvars <- c("age", "hoursworked", "income")
+yvars <- c("socsec", "selfemploy") # different kinds of income
+zvars <- c("interest", "pension", "wages") # different kinds of income
+
+
+res <- get_distances(afile, bfile, xvars, k=10)
+str(res)
 
 
 #..++ Create package if not already done ----
