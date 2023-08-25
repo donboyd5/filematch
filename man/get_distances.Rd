@@ -22,8 +22,8 @@ A list with two elements, each of which has two matrices. The elements are dbtoa
 Get k nearest neighbors of afile and k nearest neighbors of bfile, based on distances between common xvars.
 }
 \examples{
-afile <- readRDS(here::here("data", "test_afile.rds"))
-bfile <- readRDS(here::here("data", "test_bfile.rds"))
+data(afile)
+data(bfile)
 xvars <- c("age", "hoursworked", "income")
 res <- get_distances(afile, bfile, xvars, k = 10)
 str(res)

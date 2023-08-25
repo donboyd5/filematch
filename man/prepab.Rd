@@ -22,6 +22,3 @@ prepab(afile, bfile, idvar, wtvar, xvars, k = NULL)
 \description{
 Prepare the afile and bfile
 }
-\examples{
-TBD
-}

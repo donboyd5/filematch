@@ -10,7 +10,6 @@
 #' @export
 #'
 #' @examples
-#' TBD
 get_arcs <- function(dbtoa, datob, nodes){
 
   # create tibbles for btoa:
@@ -103,8 +102,8 @@ get_arcs <- function(dbtoa, datob, nodes){
 #' @export
 #'
 #' @examples
-#' afile <- readRDS(here::here("data", "test_afile.rds"))
-#' bfile <- readRDS(here::here("data", "test_bfile.rds"))
+#' data(afile)
+#' data(bfile)
 #' xvars <- c("age", "hoursworked", "income")
 #' res <- get_distances(afile, bfile, xvars, k = 10)
 #' str(res)
@@ -161,7 +160,6 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
 #' @export
 #'
 #' @examples
-#' TBD
 get_nodes <- function(afile, bfile) {
   nodes <- dplyr::bind_rows(
     afile |>
@@ -193,7 +191,6 @@ get_nodes <- function(afile, bfile) {
 #' @export
 #'
 #' @examples
-#' TBD
 get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yvars, zvars) {
   print("preparing base abfile...")
   abfile <- arcs |>
@@ -257,7 +254,6 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
 #' @export
 #'
 #' @examples
-#' TBD
 prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
   a <- proc.time()
 
@@ -345,7 +341,6 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
 #' @export
 #'
 #' @examples
-#' TBD
 matchab <- function(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL) {
   print("preparing nodes and arcs...")
   prep_list <- prepab(afile,

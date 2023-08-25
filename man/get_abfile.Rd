@@ -33,6 +33,3 @@ list with ...
 \description{
 Construct the AB file
 }
-\examples{
-TBD
-}

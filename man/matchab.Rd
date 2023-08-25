@@ -26,6 +26,3 @@ matchab(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL)
 \description{
 Match A and B files
 }
-\examples{
-TBD
-}
