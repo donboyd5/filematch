@@ -10,6 +10,7 @@
 #' @export
 #'
 #' @examples
+#' TBD
 get_arcs <- function(dbtoa, datob, nodes){
 
   # create tibbles for btoa:
@@ -160,6 +161,7 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
 #' @export
 #'
 #' @examples
+#' TBD
 get_nodes <- function(afile, bfile) {
   nodes <- dplyr::bind_rows(
     afile |>
@@ -174,6 +176,24 @@ get_nodes <- function(afile, bfile) {
   return(nodes)
 }
 
+#' Construct the AB file
+#'
+#' @param arcs dataframe with columns...
+#' @param nodes dataframe with columns
+#' @param flows vector...
+#' @param afile dataframe with ...
+#' @param bfile dataframe with ...
+#' @param idvar character column name
+#' @param wtvar character column name
+#' @param xvars character vector of column names
+#' @param yvars character vector of column names
+#' @param zvars character vector of column names
+#'
+#' @return list with ...
+#' @export
+#'
+#' @examples
+#' TBD
 get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yvars, zvars) {
   print("preparing base abfile...")
   abfile <- arcs |>
@@ -222,3 +242,146 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
 
   return(abfile)
 }
+
+
+#' Prepare the afile and bfile
+#'
+#' @param afile Dataframe...
+#' @param bfile Dataframe...
+#' @param idvar Character column name
+#' @param wtvar Character column name
+#' @param xvars Character vector of column names
+#' @param k Integer number of nearest neighbors to find
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' TBD
+prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
+  a <- proc.time()
+
+  # flows are from B to A
+  # create a node file
+  awtsum <- sum(afile[[wtvar]])
+  bwtsum <- sum(bfile[[wtvar]])
+  abratio <- awtsum / bwtsum
+  print(paste0("initial ratio of sum of afile weights to bfile weights is: ", round(abratio, digits = 3)))
+  print("bfile weights will be adjusted as needed so that bfile weight sum equals afile weight sum")
+  if (abratio < 0.75 || abratio > 1.25) {
+    print("however, large difference in sums suggests caution needed")
+  }
+
+  afile1 <- afile |>
+    dplyr::select(all_of(c(idvar, wtvar, xvars))) |>
+    dplyr::rename(
+      id = !!as.symbol(idvar), # investigate a consistent way of converting strings to symbols
+      weight = !!as.symbol(wtvar)
+    ) |>
+    dplyr::mutate(
+      file = "A",
+      arow = row_number(),
+      node = row_number(),
+      weightadj = weight,
+      iweight = round(weightadj) |> as.integer()
+    )
+
+  bfile1 <- bfile |>
+    dplyr::select(all_of(c(idvar, wtvar, xvars))) |>
+    dplyr::rename(
+      id = !!as.symbol(idvar),
+      weight = !!as.symbol(wtvar)
+    ) |>
+    dplyr::mutate(
+      file = "B",
+      brow = row_number(),
+      node = row_number() + nrow(afile),
+      weightadj = weight * sum(afile[[wtvar]]) / sum(weight),
+      iweight = round(weightadj) |> as.integer()
+    )
+
+  # print("balancing integer weights by adjusting bfile...")
+  # this is rough - come up with a better way later
+  awtsum <- sum(afile1$iweight)
+  bwtsum <- sum(bfile1$iweight)
+  diffba <- bwtsum - awtsum
+
+  addval <- dplyr::case_when(
+    diffba < 0 ~ 1,
+    diffba > 0 ~ -1,
+    TRUE ~ 0
+  )
+
+  bfile1 <- bfile1 |>
+    dplyr::mutate(iweight = ifelse(row_number() <= abs(diffba),
+                                   iweight + addval,
+                                   iweight
+    ))
+
+  # get distances
+  dists <- get_distances(afile1, bfile1, xvars, k)
+
+  nodes <- get_nodes(afile1, bfile1)
+  arcs <- get_arcs(dbtoa = dists$dbtoa, datob = dists$datob, nodes = nodes)
+
+  b <- proc.time()
+  preptime <- (b - a)[3]
+
+  return(list(nodes = nodes, arcs = arcs, preptime = preptime))
+}
+
+#' Match A and B files
+#'
+#' @param afile Dataframe ...
+#' @param bfile Dataframe ...
+#' @param idvar Character column name
+#' @param wtvar Character column name
+#' @param xvars Character vector of column names
+#' @param yvars Character vector of column names
+#' @param zvars Character vector of column names
+#' @param k k Integer number of nearest neighbors to find
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' TBD
+matchab <- function(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL) {
+  print("preparing nodes and arcs...")
+  prep_list <- prepab(afile,
+                      bfile,
+                      idvar = idvar,
+                      wtvar = wtvar,
+                      xvars = xvars,
+                      k = k
+  )
+  print(paste0("# seconds to prepare nodes and arcs: ", round(prep_list$preptime, 3)))
+
+  a <- proc.time()
+  # allowable_algorithms <- c("NetworkSimplex", "CostScaling", "CapacityScaling", "CycleCancelling")
+  mcfresult <- rlemon::MinCostFlow(
+    # flows are from B to A -- B has supply nodes, A has demand nodes
+    arcSources = prep_list$arcs$bnode,
+    arcTargets = prep_list$arcs$anode,
+    arcCapacities = rep(max(abs(prep_list$nodes$supply)), nrow(prep_list$arcs)),
+    arcCosts = prep_list$arcs$dist,
+    nodeSupplies = prep_list$nodes$supply,
+    numNodes = nrow(prep_list$nodes),
+    algorithm = "NetworkSimplex" # NetworkSimplex seems fastest for these problems
+  )
+  b <- proc.time()
+  mcfresult$mcftime <- (b - a)[3]
+  print(paste0("# seconds to solve minimum cost flow problem: ", round(mcfresult$mcftime, 3)))
+  print(paste0("Solution status: ", mcfresult$feasibility))
+
+  abfile <- get_abfile(
+    arcs = prep_list$arcs,
+    nodes = prep_list$nodes,
+    flows = mcfresult$flows,
+    afile = afile, bfile = bfile, idvar = idvar, wtvar = wtvar,
+    xvars = xvars, yvars = yvars, zvars = zvars
+  )
+
+  return(list(prep_list = prep_list, mcfresult = mcfresult, abfile = abfile))
+}
+

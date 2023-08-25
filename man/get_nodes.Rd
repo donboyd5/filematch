@@ -17,3 +17,6 @@ dataframe with afile and bfile concatenated, with integer supply values for the 
 \description{
 Creates a combined dataframe from afile and bfile. Its node column and supply column will be used as inputs to a minimum cost flow problem.
 }
+\examples{
+TBD
+}
