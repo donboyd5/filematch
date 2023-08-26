@@ -25,7 +25,10 @@ get_arcs <- function(dbtoa, datob, nodes){
                        neighbor=rep(1:ncol(dbtoa$nn.dist), nrow(dbtoa$nn.dist)),
                        dist=c(t(dbtoa$nn.dist)))
 
-  dbtoa_arcs <- dplyr::left_join(dbtoa_idx, dbtoa_dist, by = dplyr::join_by(arow, neighbor))
+  dbtoa_arcs <- dplyr::left_join(dbtoa_idx, dbtoa_dist,
+                                 by = dplyr::join_by(
+                                   .data$x$arow==y$arow,
+                                   x$neighbor==y$neighbor))
   # dbtoa_arcs
 
   datob_idx <- tibble::tibble(brow=rep(1:nrow(datob$nn.index), each=ncol(datob$nn.index)),
@@ -36,7 +39,10 @@ get_arcs <- function(dbtoa, datob, nodes){
                        neighbor=rep(1:ncol(datob$nn.dist), nrow(datob$nn.dist)),
                        dist=c(t(datob$nn.dist)))
 
-  datob_arcs <- dplyr::left_join(datob_idx, datob_dist, by = dplyr::join_by(brow, neighbor))
+  datob_arcs <- dplyr::left_join(datob_idx, datob_dist,
+                                 by = dplyr::join_by(
+                                   x$brow==y$brow,
+                                   x$neighbor==y$neighbor))
 
   # arcs: combine and keep unique arcs, keeping track of their neighbor status
   arcs1 <- dplyr::bind_rows(
@@ -59,19 +65,20 @@ get_arcs <- function(dbtoa, datob, nodes){
   arcs_neighbors <- arcs_distinct |>
     dplyr::left_join(arcs1 |> dplyr::filter(.data$src=="btoa") |>
                        dplyr::select(.data$arow, .data$brow, btoa_neighbor=.data$neighbor),
-                     by = dplyr::join_by(arow, brow)) |>
+                     by = dplyr::join_by(
+                       x$arow==y$arow, x$brow==y$brow)) |>
     dplyr::left_join(arcs1 |> dplyr::filter(.data$src=="atob") |>
                        dplyr::select(.data$arow, .data$brow, atob_neighbor=.data$neighbor),
-                     by = dplyr::join_by(arow, brow)) |>
+                     by = dplyr::join_by(x$arow==y$arow, x$brow==y$brow)) |>
     # prefer btoa_neighbor for later analysis of how far we had to go to find matches
     dplyr::mutate(neighbor=ifelse(is.na(.data$btoa_neighbor), .data$atob_neighbor, .data$btoa_neighbor))
 
   # create the final arcs file: bring in node numbers
   arcs <- arcs_neighbors |>
     dplyr::left_join(nodes |> dplyr::filter(file=="B") |> dplyr::select(bnode=.data$node, brow=.data$abrow),
-                     by = dplyr::join_by(brow)) |>
+                     by = dplyr::join_by(x$brow==y$brow)) |>
     dplyr::left_join(nodes |> dplyr::filter(file=="A") |> dplyr::select(anode=.data$node, arow=.data$abrow),
-                     by = dplyr::join_by(arow)) |>
+                     by = dplyr::join_by(x$arow==y$arow)) |>
     dplyr::select(.data$anode, .data$bnode, .data$arow, .data$brow, .data$dist,
                   .data$neighbor, .data$btoa_neighbor, .data$atob_neighbor) |>
 

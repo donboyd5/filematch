@@ -18,7 +18,8 @@ Imports:
     rlemon,
     stats,
     tibble,
-    tidyselect
+    tidyselect,
+    utils
 Depends: 
     R (>= 2.10)
 LazyData: true
