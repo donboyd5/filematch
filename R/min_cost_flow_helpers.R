@@ -178,13 +178,13 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
 get_nodes <- function(afile, bfile) {
   nodes <- dplyr::bind_rows(
     afile |>
-      dplyr::select(id, node, abrow = arow, weight, weightadj, iweight) |>
-      dplyr::mutate(file = "A", supply = -iweight), # note the minus sign because the A file demands weights
+      dplyr::select("id", "node", abrow = "arow", "weight", "weightadj", "iweight") |>
+      dplyr::mutate(file = "A", supply = -.data$iweight), # note the minus sign because the A file demands weights
     bfile |>
-      dplyr::select(id, node, abrow = brow, weight, weightadj, iweight) |>
-      dplyr::mutate(file = "B", supply = iweight)
+      dplyr::select("id", "node", abrow = "brow", "weight", "weightadj", "iweight") |>
+      dplyr::mutate(file = "B", supply = .data$iweight)
   ) |> # note NO minus sign because the B file supplies weights
-    dplyr::select(id, node, file, abrow, everything())
+    dplyr::select("id", "node", "file", "abrow", tidyselect::everything())
 
   return(nodes)
 }
