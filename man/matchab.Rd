@@ -23,6 +23,13 @@ matchab(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL)
 
 \item{k}{k Integer number of nearest neighbors to find}
 }
+\value{
+list with prep_list, mcfresult, and abfile
+}
 \description{
 Match A and B files
+}
+\examples{
+library(filematch)
+data(afile)
 }

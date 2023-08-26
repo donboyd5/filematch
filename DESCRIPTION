@@ -14,9 +14,11 @@ Config/testthat/edition: 3
 Imports: 
     dplyr,
     FNN,
+    rlang,
     rlemon,
-    stringr,
-    tidyr
+    stats,
+    tibble,
+    tidyselect
 Depends: 
     R (>= 2.10)
 LazyData: true

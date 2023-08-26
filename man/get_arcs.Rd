@@ -19,3 +19,7 @@ dataframe with arcs for a minimum cost flow problem.
 \description{
 Create arcs for a minimum cost flow problem
 }
+\examples{
+library(filematch)
+data(afile)
+}

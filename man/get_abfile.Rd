@@ -33,3 +33,7 @@ list with ...
 \description{
 Construct the AB file
 }
+\examples{
+library(filematch)
+data(afile)
+}

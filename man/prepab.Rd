@@ -19,6 +19,13 @@ prepab(afile, bfile, idvar, wtvar, xvars, k = NULL)
 
 \item{k}{Integer number of nearest neighbors to find}
 }
+\value{
+a list with nodes, arcs, and preptime
+}
 \description{
 Prepare the afile and bfile
+}
+\examples{
+library(filematch)
+data(afile)
 }
