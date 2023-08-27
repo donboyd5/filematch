@@ -299,8 +299,8 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
       file = "A",
       arow = dplyr::row_number(),
       node = dplyr::row_number(),
-      weightadj = weight,
-      iweight = round(weightadj) |> as.integer()
+      weightadj = .data$weight,
+      iweight = round(.data$weightadj) |> as.integer()
     )
 
   bfile1 <- bfile |>
@@ -311,10 +311,10 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
     ) |>
     dplyr::mutate(
       file = "B",
-      brow = row_number(),
-      node = row_number() + nrow(afile),
-      weightadj = weight * sum(afile[[wtvar]]) / sum(weight),
-      iweight = round(weightadj) |> as.integer()
+      brow = dplyr::row_number(),
+      node = dplyr::row_number() + nrow(afile),
+      weightadj = .data$weight * sum(afile[[wtvar]]) / sum(.data$weight),
+      iweight = round(.data$weightadj) |> as.integer()
     )
 
   # print("balancing integer weights by adjusting bfile...")
@@ -330,9 +330,9 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
   )
 
   bfile1 <- bfile1 |>
-    dplyr::mutate(iweight = ifelse(row_number() <= abs(diffba),
-                                   iweight + addval,
-                                   iweight
+    dplyr::mutate(iweight = ifelse(dplyr::row_number() <= abs(diffba),
+                                   .data$iweight + addval,
+                                   .data$iweight
     ))
 
   # get distances
