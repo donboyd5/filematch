@@ -10,48 +10,58 @@
 #' @examples
 #' library(filematch)
 #' data(afile)
-get_arcs <- function(dbtoa, datob, nodes){
-
+get_arcs <- function(dbtoa, datob, nodes) {
   # create tibbles for btoa:
   #   idx has crossing of arow=1:nrow(a), neighbor=1:k indexes, brow=relevant row of b
   #   dist has crossing of arow=1:nrow(a), neighbor=1:k indexes, dist=relevant distance
   # create tibble for btoa with arow=1:nrow(a), neighbor=1:k, brow=relevant row or b
 
-  dbtoa_idx <- tibble::tibble(arow=rep(1:nrow(dbtoa$nn.index), each=ncol(dbtoa$nn.index)),
-                      neighbor=rep(1:ncol(dbtoa$nn.index), nrow(dbtoa$nn.index)),
-                      brow=c(t(dbtoa$nn.index)))
+  dbtoa_idx <- tibble::tibble(
+    arow = rep(1:nrow(dbtoa$nn.index), each = ncol(dbtoa$nn.index)),
+    neighbor = rep(1:ncol(dbtoa$nn.index), nrow(dbtoa$nn.index)),
+    brow = c(t(dbtoa$nn.index))
+  )
 
-  dbtoa_dist <- tibble::tibble(arow=rep(1:nrow(dbtoa$nn.dist), each=ncol(dbtoa$nn.dist)),
-                       neighbor=rep(1:ncol(dbtoa$nn.dist), nrow(dbtoa$nn.dist)),
-                       dist=c(t(dbtoa$nn.dist)))
+  dbtoa_dist <- tibble::tibble(
+    arow = rep(1:nrow(dbtoa$nn.dist), each = ncol(dbtoa$nn.dist)),
+    neighbor = rep(1:ncol(dbtoa$nn.dist), nrow(dbtoa$nn.dist)),
+    dist = c(t(dbtoa$nn.dist))
+  )
 
   dbtoa_arcs <- dplyr::left_join(dbtoa_idx, dbtoa_dist,
-                                 by=c("arow", "neighbor"))
-                                 # by = dplyr::join_by(
-                                 #   x$arow==y$arow,
-                                 #   x$neighbor==y$neighbor))
+    by = c("arow", "neighbor")
+  )
+  # by = dplyr::join_by(
+  #   x$arow==y$arow,
+  #   x$neighbor==y$neighbor))
   # dbtoa_arcs
 
-  datob_idx <- tibble::tibble(brow=rep(1:nrow(datob$nn.index), each=ncol(datob$nn.index)),
-                      neighbor=rep(1:ncol(datob$nn.index), nrow(datob$nn.index)),
-                      arow=c(t(datob$nn.index)))
+  datob_idx <- tibble::tibble(
+    brow = rep(1:nrow(datob$nn.index), each = ncol(datob$nn.index)),
+    neighbor = rep(1:ncol(datob$nn.index), nrow(datob$nn.index)),
+    arow = c(t(datob$nn.index))
+  )
 
-  datob_dist <- tibble::tibble(brow=rep(1:nrow(datob$nn.dist), each=ncol(datob$nn.dist)),
-                       neighbor=rep(1:ncol(datob$nn.dist), nrow(datob$nn.dist)),
-                       dist=c(t(datob$nn.dist)))
+  datob_dist <- tibble::tibble(
+    brow = rep(1:nrow(datob$nn.dist), each = ncol(datob$nn.dist)),
+    neighbor = rep(1:ncol(datob$nn.dist), nrow(datob$nn.dist)),
+    dist = c(t(datob$nn.dist))
+  )
 
   datob_arcs <- dplyr::left_join(datob_idx, datob_dist,
-                                 by=c("brow", "neighbor"))
-                                 # by = dplyr::join_by(
-                                 #   x$brow==y$brow,
-                                 #   x$neighbor==y$neighbor))
+    by = c("brow", "neighbor")
+  )
+  # by = dplyr::join_by(
+  #   x$brow==y$brow,
+  #   x$neighbor==y$neighbor))
 
   # arcs: combine and keep unique arcs, keeping track of their neighbor status
   arcs1 <- dplyr::bind_rows(
     dbtoa_arcs |>
-      dplyr::mutate(src="btoa"),
+      dplyr::mutate(src = "btoa"),
     datob_arcs |>
-      dplyr::mutate(src="atob")) |>
+      dplyr::mutate(src = "atob")
+  ) |>
     dplyr::select(.data$arow, .data$brow, .data$neighbor, .data$dist, .data$src)
 
   # keeping the neighbor number can help in figuring out the quality of a match
@@ -65,35 +75,42 @@ get_arcs <- function(dbtoa, datob, nodes){
     dplyr::distinct()
 
   arcs_neighbors <- arcs_distinct |>
-    dplyr::left_join(arcs1 |> dplyr::filter(.data$src=="btoa") |>
-                       dplyr::select(.data$arow, .data$brow, btoa_neighbor=.data$neighbor),
-                     by=c("arow", "brow")) |>
-                     # by = dplyr::join_by(
-                     #   x$arow==y$arow, x$brow==y$brow)) |>
-    dplyr::left_join(arcs1 |> dplyr::filter(.data$src=="atob") |>
-                       dplyr::select(.data$arow, .data$brow, atob_neighbor=.data$neighbor),
-                     by=c("arow", "brow")) |>
-                     # by = dplyr::join_by(x$arow==y$arow, x$brow==y$brow)) |>
+    dplyr::left_join(
+      arcs1 |> dplyr::filter(.data$src == "btoa") |>
+        dplyr::select(.data$arow, .data$brow, btoa_neighbor = .data$neighbor),
+      by = c("arow", "brow")
+    ) |>
+    # by = dplyr::join_by(
+    #   x$arow==y$arow, x$brow==y$brow)) |>
+    dplyr::left_join(
+      arcs1 |> dplyr::filter(.data$src == "atob") |>
+        dplyr::select(.data$arow, .data$brow, atob_neighbor = .data$neighbor),
+      by = c("arow", "brow")
+    ) |>
+    # by = dplyr::join_by(x$arow==y$arow, x$brow==y$brow)) |>
     # prefer btoa_neighbor for later analysis of how far we had to go to find matches
-    dplyr::mutate(neighbor=ifelse(is.na(.data$btoa_neighbor), .data$atob_neighbor, .data$btoa_neighbor))
+    dplyr::mutate(neighbor = ifelse(is.na(.data$btoa_neighbor), .data$atob_neighbor, .data$btoa_neighbor))
 
   # create the final arcs file: bring in node numbers
   arcs <- arcs_neighbors |>
-    dplyr::left_join(nodes |> dplyr::filter(file=="B") |> dplyr::select(bnode=.data$node, brow=.data$abrow),
-                     by=c("brow")) |>
-                     # by = dplyr::join_by(x$brow==y$brow)) |>
-    dplyr::left_join(nodes |> dplyr::filter(file=="A") |> dplyr::select(anode=.data$node, arow=.data$abrow),
-                     by=c("arow")) |>
-                     # by = dplyr::join_by(x$arow==y$arow)) |>
-    dplyr::select(.data$anode, .data$bnode, .data$arow, .data$brow, .data$dist,
-                  .data$neighbor, .data$btoa_neighbor, .data$atob_neighbor) |>
-
+    dplyr::left_join(nodes |> dplyr::filter(file == "B") |> dplyr::select(bnode = .data$node, brow = .data$abrow),
+      by = c("brow")
+    ) |>
+    # by = dplyr::join_by(x$brow==y$brow)) |>
+    dplyr::left_join(nodes |> dplyr::filter(file == "A") |> dplyr::select(anode = .data$node, arow = .data$abrow),
+      by = c("arow")
+    ) |>
+    # by = dplyr::join_by(x$arow==y$arow)) |>
+    dplyr::select(
+      .data$anode, .data$bnode, .data$arow, .data$brow, .data$dist,
+      .data$neighbor, .data$btoa_neighbor, .data$atob_neighbor
+    ) |>
     # Convert distances, which are in standard deviation units because of scaling,
     # to integers because the minimum cost flow algorithms require integer inputs.
     # Multiply by 100 to spread them out (otherwise we might have 0, 1, 2, 3 standard deviations)
     # I use 100 rather than a larger number, to keep the costs relatively small because
     # small costs to be important for minimum cost flow solvers.
-    dplyr::mutate(dist=as.integer(.data$dist*100.)) |>
+    dplyr::mutate(dist = as.integer(.data$dist * 100.)) |>
     dplyr::arrange(.data$anode, .data$bnode)
 
   return(arcs)
@@ -219,14 +236,14 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
       nodes |>
         dplyr::filter(file == "A") |>
         dplyr::select(aid = .data$id, arow = .data$abrow, a_weight = .data$iweight),
-      by=c("arow")
+      by = c("arow")
       # by = dplyr::join_by(arow)
     ) |>
     dplyr::left_join(
       nodes |>
         dplyr::filter(file == "B") |>
         dplyr::select(bid = .data$id, brow = .data$abrow, b_weight = .data$iweight),
-      by=c("brow")
+      by = c("brow")
       # by = dplyr::join_by(brow)
     ) |>
     # convert the a and b id variable names to user-recognizable names
@@ -331,8 +348,8 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
 
   bfile1 <- bfile1 |>
     dplyr::mutate(iweight = ifelse(dplyr::row_number() <= abs(diffba),
-                                   .data$iweight + addval,
-                                   .data$iweight
+      .data$iweight + addval,
+      .data$iweight
     ))
 
   # get distances
@@ -367,11 +384,11 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
 matchab <- function(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL) {
   print("preparing nodes and arcs...")
   prep_list <- prepab(afile,
-                      bfile,
-                      idvar = idvar,
-                      wtvar = wtvar,
-                      xvars = xvars,
-                      k = k
+    bfile,
+    idvar = idvar,
+    wtvar = wtvar,
+    xvars = xvars,
+    k = k
   )
   print(paste0("# seconds to prepare nodes and arcs: ", round(prep_list$preptime, 3)))
 
@@ -402,4 +419,3 @@ matchab <- function(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL) {
 
   return(list(prep_list = prep_list, mcfresult = mcfresult, abfile = abfile))
 }
-

@@ -1,0 +1,230 @@
+---
+title: "filematch-vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{filematch-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+Suppose we have a project that requires microdata on households for 3 sets of variables: **X**, **Y**, and **Z**. (For example, suppose we need a dataset with information on household demographics (**X**), income (**Y**), and expenditures (**Z**).)
+
+Unfortunately, we don't have a dataset with this information. But we do have two separate surveys, **A** and **B**:
+
+-   **A** has variables **X** and **Y**, plus a survey weight for each household.
+
+-   **B** has variables **X** and **Z**, plus a survey weight for each household.
+
+Surveys **A** and **B** are drawn from approximately the same population and the sums of record weights are approximately the same in each file.
+
+There are several ways to take advantage of the information in files **A** and **B** to create a data file **AB** that has variables **X**, **Y**, and **Z**. One approach is to "statistically" match files **A** and **B** to create a synthetic file **AB**. (One R package that does this is [`StatMatch`](https://cran.r-project.org/web/packages/StatMatch/StatMatch.pdf).
+
+This vignette shows how to match two weighted microdata files **A** and **B** that have variables **X** in common. **A** also has variables **Y**, **B** also has variables **Z**. The goal is to end up with a file, **AB**, that has variables **X**, and **Z**.
+
+```{r setup}
+library(filematch)
+library(tidyverse)
+library(StatMatch)
+# library(clue)
+```
+
+Define the variable groups that are in the A and B files.
+
+```{r define_variable_groups}
+idvars <- c("pid", "weight") # common to A and B
+xvars <- c("age", "hoursworked", "income") # common to A and B
+yvars <- c("socsec", "selfemploy") # only in A: different kinds of income
+zvars <- c("interest", "pension", "wages") # only in B: different kinds of income
+```
+
+Do some basic checks on the A and B files to be suitable for matching.
+
+```{r examine_a_and_bfiles}
+glimpse(afile) # idvars, xvars, yvars
+glimpse(bfile) # idvars, xvars, zvars
+
+# make sure neither file has duplicated ids
+anyDuplicated(afile$pid)
+anyDuplicated(bfile$pid)
+
+# are sums of file weights reasonably close?
+sum(afile$weight) / sum(bfile$weight)
+```
+
+The key parameter to choose is `k`. There is no simple way to choose an optimal `k`. Examining the data can help.
+
+```{r choose_k}
+# to help us choose k
+nrow(afile); nrow(bfile)
+# k=100 seems to be reasonably good much of the time
+# this allows each afile record to be matched to up to 100 of its nearest bfile neighbors
+# and the same for each bfile record
+
+```
+
+Match the A and B files.
+
+```{r match_a_and_b}
+res <- matchab(afile=afile,
+               bfile=bfile,
+               idvar="pid",
+               wtvar="weight",
+               xvars=xvars,
+               yvars=yvars,
+               zvars=zvars,
+               k=100)
+```
+
+What was returned?
+
+```{r check_return}
+str(res)
+str(res$prep_list)
+str(res$mcfresult)
+
+res$prep_list$arcs # this shows all of the allowable a-b matches; only some will have been selected
+
+```
+
+```{r check_weights_satisfied}
+# check that the weights for all split people sum to the full person weight (as adjusted)
+ab <- res$abfile
+ab |>
+  summarise(n=n(), a_weight=first(a_weight), weight=sum(weight), .by=a_pid) |>
+  mutate(diff=a_weight - weight) |>
+  arrange(desc(abs(diff)), desc(n))
+
+ab |>
+  summarise(n=n(), b_weight=first(b_weight), weight=sum(weight), .by=b_pid) |>
+  mutate(diff=b_weight - weight) |>
+  arrange(desc(abs(diff)), desc(n))
+
+```
+
+How far did we have to go to get matches, and what were their distances?
+
+```{r check_distances}
+
+# how far did we have to go to get matches, and what were their distances?
+quantile(ab$neighbor, probs=c(0, .25, .5, .75, .9, .95, .99, 1))
+
+```
+
+```{r something_else}
+
+ab |>
+  summarise(n=n(),
+            dist=mean(dist),
+            .by=neighbor) |>
+  arrange(neighbor) |>
+  mutate(pct=n / sum(n),
+         cumpct=cumsum(pct)) |>
+  filter(cumpct <= .9)
+```
+
+```{r}
+
+a2 <- as.data.frame(afile, row.names=afile$pid)
+row.names(a2) <- afile$pid
+
+b2 <- as.data.frame(bfile, row.names=bfile$pid)
+row.names(b2) <- bfile$pid
+
+nnd1 <- NND.hotdeck(data.rec = a2, data.don = b2,
+                        don.class = NULL, 
+                        match.vars = xvars,
+                    dist.fun="Mahalanobis") # Manhattan Euclidean Mahalanobis minimax Gower exact exact matching
+str(nnd1)
+nnd1$mtc.ids
+nnd1$dist.rd
+nnd1$dist.noad
+
+abnnd <- create.fused(data.rec = a2, data.don = b2,
+                            mtc.ids = nnd1$mtc.ids, dup.x =TRUE,
+                            match.vars =  xvars, 
+                            z.vars = zvars)
+
+sum(bfile$weight*bfile$interest)
+sum(ab$weight*ab$interest)
+sum(ab$weight*ab$interest) / sum(bfile$weight*bfile$interest) - 1
+sum(ab$weight*ab$pension) / sum(bfile$weight*bfile$pension) - 1
+sum(ab$weight*ab$wages) / sum(bfile$weight*bfile$wages) - 1
+
+sum(abnnd$weight*abnnd$interest)
+sum(abnnd$weight*abnnd$interest) / sum(bfile$weight*bfile$interest) - 1
+sum(abnnd$weight*abnnd$pension) / sum(bfile$weight*bfile$pension) - 1
+sum(abnnd$weight*abnnd$wages) / sum(bfile$weight*bfile$wages) - 1
+
+cor(bfile |> select(interest, pension, wages))
+cor(ab |> select(interest, pension, wages))
+cor(abnnd |> select(interest, pension, wages))
+
+
+axvars <- c("a_age", "a_hoursworked", "a_income")
+vars <- c(xvars, yvars, zvars)
+vars1 <- c(axvars, yvars, zvars)
+cor(ab |> select(all_of(vars1)))
+cor(abnnd |> select(all_of(vars)))
+
+cor(ab |> select(all_of(c(yvars, zvars))))
+cor(abnnd |> select(all_of(c(yvars, zvars))))
+
+cor(afile |> select(all_of(c(xvars, yvars))))
+cor(ab |> select(all_of(c(axvars, yvars))))
+cor(abnnd |> select(all_of(c(xvars, yvars))))
+
+
+
+# DON'T USE mixed.mtc
+# mtc1 <- mixed.mtc(data.rec=b2, data.don=a2, match.vars=xvars[-3], y.rec=xvars[3], z.don=xvars[3], micro=TRUE)
+# str(mtc1)
+
+```
+
+
+
+```{r eval=FALSE}
+library(StatMatch)
+data("samp.A")
+data(samp.B)
+out.nnd1 <- NND.hotdeck(data.rec = samp.A, data.don = samp.B,
+                        don.class = "sex", 
+                        match.vars = "age")
+str(out.nnd1)
+
+fillA.nnd.1 <- create.fused(data.rec = samp.A, data.don = samp.B,
+                            mtc.ids = out.nnd1$mtc.ids, dup.x =T,
+                            match.vars =  c("age", "sex"), 
+                            z.vars = "labour5")
+
+tmp <- fillA.nnd.1
+
+
+fillA.rnd.1 <- create.fused(data.rec = samp.A, data.don = samp.B,
+                          mtc.ids = out.rnd$mtc.ids, dup.x =T,
+                          match.vars =  c("c.age", "sex"), 
+                          z.vars = "labour5")
+
+
+out.rnd <- RANDwNND.hotdeck(data.rec = samp.A, data.don = samp.B,
+                       don.class = c("c.age", "sex")) 
+
+head(out.rnd$mtc.ids, 4)
+
+# create synthetic data set, samp.A is the recipient
+fillA.rnd.1 <- create.fused(data.rec = samp.A, data.don = samp.B,
+                          mtc.ids = out.rnd$mtc.ids, dup.x =T,
+                          match.vars =  c("c.age", "sex"), 
+                          z.vars = "labour5")
+
+
+```
