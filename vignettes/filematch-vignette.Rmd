@@ -1,8 +1,8 @@
 ---
-title: "filematch-vignette"
+title: "filematch"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{filematch-vignette}
+  %\VignetteIndexEntry{filematch}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -144,9 +144,9 @@ nnd1 <- NND.hotdeck(data.rec = a2, data.don = b2,
                         match.vars = xvars,
                     dist.fun="Mahalanobis") # Manhattan Euclidean Mahalanobis minimax Gower exact exact matching
 str(nnd1)
-nnd1$mtc.ids
-nnd1$dist.rd
-nnd1$dist.noad
+# nnd1$mtc.ids
+# nnd1$dist.rd
+# nnd1$dist.noad
 
 abnnd <- create.fused(data.rec = a2, data.don = b2,
                             mtc.ids = nnd1$mtc.ids, dup.x =TRUE,

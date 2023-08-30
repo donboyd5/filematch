@@ -33,24 +33,17 @@ By contrast, a constrained match requires that the weight for every **B** record
 
 There is a tradeoff: unconstrained matching can choose the best **A**-**B** matches for each record, regardless of how many times a record or its weight are used but constrained matching necessarily will have to limit use of some records, meaning that other, less-good matches may be included.
 
-An excellent package that has many tools for *unconstrained* file matching is `StatMatch`.
-
-This package has a different focus than `StatMatch`: its goal is to provide efficient methods for constrained matching.
+An excellent package that has many tools for *unconstrained* file matching is `StatMatch`. This package has a different focus than `StatMatch`: its goal is to provide efficient methods for constrained matching.
 
 ## Installation
 
-You can install the development version of filematch from [GitHub](https://github.com/) with:
+You can install the development version of `filematch` from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("donboyd5/filematch")
+devtools::install_github("donboyd5/filematch", dependencies = TRUE, build_vignettes = TRUE)
 ```
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
-```{r example}
-library(filematch)
-## basic example code
-```
+Run the vignette: `vignette("filematch-vignette", package="filematch")` which will show you how to match two files.
