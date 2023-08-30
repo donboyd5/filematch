@@ -16,19 +16,26 @@ knitr::opts_chunk$set(
 # filematch
 
 <!-- badges: start -->
+
 <!-- badges: end -->
 
-filematch has tools that aid in constrained statistical matching of two microdata files that have record weights.
+filematch has tools that aid in *constrained* statistical matching of two microdata files that have record weights.
 
-These data files commonly are called file A and file B. Typically they have a set of X variables in common. In addition, A has a set of Y variables and B has a set of Z variables. The goal is to create an AB file that has X, Y, and Z variables. 
+These data files commonly are called file **A** and file **B**. Typically they have a set of **X** variables in common. In addition, **A** has a set of **Y** variables and **B** has a set of **Z** variables. The goal is to create an **AB** file that has **X**, **Y**, and **Z** variables. Usually one file - typically **B** - is called the donor file and one file (typically **A**) is called the recipient file -- records from **B** are matched with records from **A**, sometimes matching more than one **A** record.
 
-An unconstrained match does not necessarily ensure that... A constrained match ensures that ...
+In an unconstrained match, there is no requirement that all of the B record weights are exactly used:
 
-An excellent package that has many tools for unconstrained file matching is `StatMatch`. 
+-   It is possible that a **B** record will be matched with **A** records in a way that uses more than its full weight -- for example, a **B** record that has a weight of 200 might be matched with 3 **A** records that have, respectively, weights of 100, 200, and 300, thus using the record for **A** records with total weights of 600, and
 
-This package has a different focus that StatMatch: its goal is to ensure that the weighted file AB has weighted sums for the Y variables that match the weighted sums of Y in A, and also has weighted sums of Z variables that match
+-   It is possible that a **B** record is less than fully used -- for example, a **B** record with a weight of 200 might be matched only with one **A** record, with a total weight of 100.
 
+By contrast, a constrained match requires that the weight for every **B** record is fully used and the weight for every **A** record is fully used. This ensures that the weighted sums of the **Y** variables in **AB** match the weighted sums in **A**, and the weighted sums of the **Z** variables in **AB** match the weighted sums in **B**.
 
+There is a tradeoff: unconstrained matching can choose the best **A**-**B** matches for each record, regardless of how many times a record or its weight are used but constrained matching necessarily will have to limit use of some records, meaning that other, less-good matches may be included.
+
+An excellent package that has many tools for *unconstrained* file matching is `StatMatch`.
+
+This package has a different focus than `StatMatch`: its goal is to provide efficient methods for constrained matching.
 
 ## Installation
 
@@ -47,5 +54,3 @@ This is a basic example which shows you how to solve a common problem:
 library(filematch)
 ## basic example code
 ```
-
-
