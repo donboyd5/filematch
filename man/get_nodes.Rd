@@ -7,9 +7,9 @@
 get_nodes(afile, bfile)
 }
 \arguments{
-\item{afile}{dataframe with columns id, node, arow, weight, weightadj, iweight}
+\item{afile}{dataframe with columns id, node, a_row, weight, weightadj, iweight}
 
-\item{bfile}{dataframe with columns id, node, arow, weight, weightadj, iweight}
+\item{bfile}{dataframe with columns id, node, a_row, weight, weightadj, iweight}
 }
 \value{
 dataframe with afile and bfile concatenated, with integer supply values for the minimum cost flow problem. The afile supplies will be negative because it will receive weights from the bfile. The bfile is the donor and its supplies will be positive. The supplies will sum to zero.
