@@ -231,11 +231,12 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
     dplyr::mutate(weight = flows) |>
     dplyr::filter(.data$weight > 0) |> # drop potential matches that weren't used
 
-    # get the id and weight variables for the a and b files
+    # get the id and weight variables for the a and b files from the nodes file
     dplyr::left_join(
       nodes |>
         dplyr::filter(file == "A") |>
-        dplyr::select(aid = .data$id, arow = .data$abrow, a_weight = .data$iweight),
+        dplyr::select(aid = "id", arow = "abrow", a_weight = "iweight"),
+        # dplyr::select(aid = .data$id, arow = .data$abrow, a_weight = .data$iweight),
       by = c("arow")
       # by = dplyr::join_by(arow)
     ) |>
@@ -246,6 +247,7 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
       by = c("brow")
       # by = dplyr::join_by(brow)
     ) |>
+
     # convert the a and b id variable names to user-recognizable names
     dplyr::select(.data$anode, .data$bnode, .data$aid, .data$bid, .data$neighbor, .data$a_weight, .data$b_weight, .data$dist, .data$weight) |>
     dplyr::rename(
@@ -256,8 +258,8 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
     dplyr::left_join(
       afile |>
         dplyr::select(-tidyselect::all_of(wtvar)) |>
-        dplyr::rename(!!paste0("a_", idvar) := rlang::sym(idvar)) |>
-        dplyr::rename(!!!stats::setNames(xvars, paste0("a_", xvars))), # give afile xvars an a prefix - do I need this many !!! ?
+        dplyr::rename(!!paste0("a_", idvar) := rlang::sym(idvar)), #  |>
+        # dplyr::rename(!!!stats::setNames(xvars, paste0("a_", xvars))), # give afile xvars an a prefix - do I need this many !!! ?
       by = dplyr::join_by(!!paste0("a_", idvar))
     ) |>
     dplyr::left_join(
