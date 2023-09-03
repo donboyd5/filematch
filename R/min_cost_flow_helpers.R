@@ -76,20 +76,25 @@ get_arcs <- function(dbtoa, datob, nodes) {
 
   arcs_neighbors <- arcs_distinct |>
     dplyr::left_join(
-      arcs1 |> dplyr::filter(.data$src == "btoa") |>
+      arcs1 |>
+        dplyr::filter(.data$src == "btoa") |>
         dplyr::select("a_row", "b_row", "btoa_neighbor" = "neighbor"),
       by = c("a_row", "b_row")
     ) |>
     # by = dplyr::join_by(
     #   x$a_row==y$a_row, x$b_row==y$b_row)) |>
     dplyr::left_join(
-      arcs1 |> dplyr::filter(.data$src == "atob") |>
+      arcs1 |>
+        dplyr::filter(.data$src == "atob") |>
         dplyr::select("a_row", "b_row", "atob_neighbor" = "neighbor"),
       by = c("a_row", "b_row")
     ) |>
     # by = dplyr::join_by(x$a_row==y$a_row, x$b_row==y$b_row)) |>
     # prefer btoa_neighbor for later analysis of how far we had to go to find matches
-    dplyr::mutate(neighbor = ifelse(is.na(.data$btoa_neighbor), .data$atob_neighbor, .data$btoa_neighbor))
+    dplyr::mutate(neighbor = ifelse(
+      is.na(.data$btoa_neighbor),
+      .data$atob_neighbor,
+      .data$btoa_neighbor))
 
   # create the final arcs file: bring in node numbers
   arcs <- arcs_neighbors |>
@@ -166,8 +171,9 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
   # each A record has k nearest neighbors in the B file
   # result matrices have same # rows as afile
   dbtoa <- FNN::get.knnx(
-    bfile |> dplyr::select(!!xvars) |> scale(),
-    afile |> dplyr::select(!!xvars) |> scale(),
+    # select(!!xvars) also works
+    bfile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
+    afile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
     k = k, algorithm = "brute"
   )
 
@@ -201,11 +207,11 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
 get_nodes <- function(afile, bfile) {
   nodes <- dplyr::bind_rows(
     afile |>
-      dplyr::select("id", "node", abrow = "a_row", "weight", "weightadj", "iweight") |>
+      dplyr::select("id", "node", "abrow" = "a_row", "weight", "weightadj", "iweight") |>
       # note the minus sign below because the A file demands weights
       dplyr::mutate(file = "A", supply = -.data$iweight),
     bfile |>
-      dplyr::select("id", "node", abrow = "b_row", "weight", "weightadj", "iweight") |>
+      dplyr::select("id", "node", "abrow" = "b_row", "weight", "weightadj", "iweight") |>
       # note NO minus sign below because the B file supplies weights
       dplyr::mutate(file = "B", supply = .data$iweight)
   ) |>
@@ -247,14 +253,14 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
     dplyr::left_join(
       nodes |>
         dplyr::filter(file == "A") |>
-        dplyr::select(a_id = "id", a_row = "abrow", a_weight = "iweight"),
+        dplyr::select("a_id" = "id", "a_row" = "abrow", "a_weight" = "iweight"),
       by = c("a_row")
       # by = dplyr::join_by(a_row) # don't use join_by in this package
     ) |>
     dplyr::left_join(
       nodes |>
         dplyr::filter(file == "B") |>
-        dplyr::select(b_id = "id", b_row = "abrow", b_weight = "iweight"),
+        dplyr::select("b_id" = "id", "b_row" = "abrow", "b_weight" = "iweight"),
       by = c("b_row")
     ) |>
 
