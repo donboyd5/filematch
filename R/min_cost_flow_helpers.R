@@ -235,42 +235,41 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
     dplyr::left_join(
       nodes |>
         dplyr::filter(file == "A") |>
-        dplyr::select(aid = "id", arow = "abrow", a_weight = "iweight"),
-        # dplyr::select(aid = .data$id, arow = .data$abrow, a_weight = .data$iweight),
+        dplyr::select(a_id = "id", arow = "abrow", a_weight = "iweight"),
       by = c("arow")
-      # by = dplyr::join_by(arow)
+      # by = dplyr::join_by(arow) # don't use join_by in this package
     ) |>
     dplyr::left_join(
       nodes |>
         dplyr::filter(file == "B") |>
-        dplyr::select(bid = .data$id, brow = .data$abrow, b_weight = .data$iweight),
+        dplyr::select(b_id = "id", brow = "abrow", b_weight = "iweight"),
       by = c("brow")
-      # by = dplyr::join_by(brow)
     ) |>
 
     # convert the a and b id variable names to user-recognizable names
-    dplyr::select(.data$anode, .data$bnode, .data$aid, .data$bid, .data$neighbor, .data$a_weight, .data$b_weight, .data$dist, .data$weight) |>
+    dplyr::select("anode", "bnode", "a_id", "b_id", "neighbor", "a_weight", "b_weight",
+                  "dist", "weight") |>
     dplyr::rename(
-      !!paste0("a_", idvar) := .data$aid,
-      !!paste0("b_", idvar) := .data$bid
+      # use the original idvar name, with a prefix
+      !!paste0("a_", idvar) := "a_id",
+      !!paste0("b_", idvar) := "b_id"
     ) |>
     # bring in each file's xvars, plus the yvars from a and zvars from b
     dplyr::left_join(
       afile |>
         dplyr::select(-tidyselect::all_of(wtvar)) |>
-        dplyr::rename(!!paste0("a_", idvar) := rlang::sym(idvar)), #  |>
-        # dplyr::rename(!!!stats::setNames(xvars, paste0("a_", xvars))), # give afile xvars an a prefix - do I need this many !!! ?
+        dplyr::rename(!!paste0("a_", idvar) := tidyselect::all_of(idvar)), # rlang::sym(idvar)),
       by = dplyr::join_by(!!paste0("a_", idvar))
     ) |>
     dplyr::left_join(
       bfile |>
         dplyr::select(-tidyselect::all_of(wtvar)) |>
-        dplyr::rename(!!paste0("b_", idvar) := rlang::sym(idvar)) |>
+        dplyr::rename(!!paste0("b_", idvar) := tidyselect::all_of(idvar)) |> # rlang::sym(idvar)) |>
         dplyr::rename(!!!stats::setNames(xvars, paste0("b_", xvars))), # give bfile xvars a b prefix
       by = dplyr::join_by(!!paste0("b_", idvar))
     ) |>
     # move variables around so that it is easier visually to compare the afile xvars to the bfile xvars
-    dplyr::relocate(dist, .after = rlang::sym(paste0("b_", idvar))) |>
+    dplyr::relocate(dist, .after = paste0("b_", idvar)) |>  # rlang::sym(paste0("b_", idvar))) |>
     dplyr::relocate(tidyselect::all_of(yvars), .after = tidyselect::last_col()) |>
     dplyr::relocate(tidyselect::all_of(zvars), .after = tidyselect::last_col()) |>
     dplyr::arrange(.data$anode, .data$dist)
