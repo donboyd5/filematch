@@ -93,17 +93,21 @@ get_arcs <- function(dbtoa, datob, nodes) {
 
   # create the final arcs file: bring in node numbers
   arcs <- arcs_neighbors |>
-    dplyr::left_join(nodes |> dplyr::filter(file == "B") |> dplyr::select(bnode = .data$node, brow = .data$abrow),
+    dplyr::left_join(nodes |>
+                       dplyr::filter(file == "B") |>
+                       dplyr::select("b_node" = "node", "brow" = "abrow"),
       by = c("brow")
     ) |>
     # by = dplyr::join_by(x$brow==y$brow)) |>
-    dplyr::left_join(nodes |> dplyr::filter(file == "A") |> dplyr::select(anode = .data$node, arow = .data$abrow),
+    dplyr::left_join(nodes |>
+                       dplyr::filter(file == "A") |>
+                       dplyr::select("a_node" = "node", "arow" = "abrow"),
       by = c("arow")
     ) |>
     # by = dplyr::join_by(x$arow==y$arow)) |>
     dplyr::select(
-      .data$anode, .data$bnode, .data$arow, .data$brow, .data$dist,
-      .data$neighbor, .data$btoa_neighbor, .data$atob_neighbor
+      "a_node", "b_node", "arow", "brow", "dist",
+      "neighbor", "btoa_neighbor", "atob_neighbor"
     ) |>
     # Convert distances, which are in standard deviation units because of scaling,
     # to integers because the minimum cost flow algorithms require integer inputs.
@@ -111,7 +115,7 @@ get_arcs <- function(dbtoa, datob, nodes) {
     # I use 100 rather than a larger number, to keep the costs relatively small because
     # small costs to be important for minimum cost flow solvers.
     dplyr::mutate(dist = as.integer(.data$dist * 100.)) |>
-    dplyr::arrange(.data$anode, .data$bnode)
+    dplyr::arrange(.data$a_node, .data$b_node)
 
   return(arcs)
 }
@@ -161,7 +165,8 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
   # k nearest distances for donating from file B to file A (dbtoa)
   # each A record has k nearest neighbors in the B file
   # result matrices have same # rows as afile
-  dbtoa <- FNN::get.knnx(bfile |> dplyr::select(!!xvars) |> scale(),
+  dbtoa <- FNN::get.knnx(
+    bfile |> dplyr::select(!!xvars) |> scale(),
     afile |> dplyr::select(!!xvars) |> scale(),
     k = k, algorithm = "brute"
   )
@@ -169,7 +174,8 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
   # k nearest distances for donating from file A to file B (datob)
   # each B record has k nearest neighbors in the A file
   # result matrices have same # rows as bfile
-  datob <- FNN::get.knnx(afile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
+  datob <- FNN::get.knnx(
+    afile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
     bfile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
     k = k, algorithm = "brute"
   )
@@ -196,11 +202,13 @@ get_nodes <- function(afile, bfile) {
   nodes <- dplyr::bind_rows(
     afile |>
       dplyr::select("id", "node", abrow = "arow", "weight", "weightadj", "iweight") |>
-      dplyr::mutate(file = "A", supply = -.data$iweight), # note the minus sign because the A file demands weights
+      # note the minus sign below because the A file demands weights
+      dplyr::mutate(file = "A", supply = -.data$iweight),
     bfile |>
       dplyr::select("id", "node", abrow = "brow", "weight", "weightadj", "iweight") |>
+      # note NO minus sign below because the B file supplies weights
       dplyr::mutate(file = "B", supply = .data$iweight)
-  ) |> # note NO minus sign because the B file supplies weights
+  ) |>
     dplyr::select("id", "node", "file", "abrow", tidyselect::everything())
 
   return(nodes)
@@ -251,7 +259,7 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
     ) |>
 
     # convert the a and b id variable names to user-recognizable names
-    dplyr::select("anode", "bnode", "a_id", "b_id", "neighbor", "a_weight", "b_weight",
+    dplyr::select("a_node", "b_node", "a_id", "b_id", "neighbor", "a_weight", "b_weight",
                   "dist", "weight") |>
     dplyr::rename(
       # use the original idvar name, with a prefix
@@ -277,7 +285,7 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
     dplyr::relocate(tidyselect::all_of(ilxvars), .after = tidyselect::last_col()) |> # interleaved xvars
     dplyr::relocate(tidyselect::all_of(yvars), .after = tidyselect::last_col()) |>
     dplyr::relocate(tidyselect::all_of(zvars), .after = tidyselect::last_col()) |>
-    dplyr::arrange(.data$anode, .data$dist)
+    dplyr::arrange(.data$a_node, .data$dist)
 
   return(abfile)
 }
@@ -402,8 +410,8 @@ matchab <- function(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL) {
   # allowable_algorithms <- c("NetworkSimplex", "CostScaling", "CapacityScaling", "CycleCancelling")
   mcfresult <- rlemon::MinCostFlow(
     # flows are from B to A -- B has supply nodes, A has demand nodes
-    arcSources = prep_list$arcs$bnode,
-    arcTargets = prep_list$arcs$anode,
+    arcSources = prep_list$arcs$b_node,
+    arcTargets = prep_list$arcs$a_node,
     arcCapacities = rep(max(abs(prep_list$nodes$supply)), nrow(prep_list$arcs)),
     arcCosts = prep_list$arcs$dist,
     nodeSupplies = prep_list$nodes$supply,
