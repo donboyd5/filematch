@@ -169,17 +169,15 @@ cor(ab |> select(interest, pension, wages))
 cor(abnnd |> select(interest, pension, wages))
 
 
-axvars <- c("a_age", "a_hoursworked", "a_income")
 vars <- c(xvars, yvars, zvars)
-vars1 <- c(axvars, yvars, zvars)
-cor(ab |> select(all_of(vars1)))
+cor(ab |> select(all_of(vars)))
 cor(abnnd |> select(all_of(vars)))
 
 cor(ab |> select(all_of(c(yvars, zvars))))
 cor(abnnd |> select(all_of(c(yvars, zvars))))
 
 cor(afile |> select(all_of(c(xvars, yvars))))
-cor(ab |> select(all_of(c(axvars, yvars))))
+cor(ab |> select(all_of(c(xvars, yvars))))
 cor(abnnd |> select(all_of(c(xvars, yvars))))
 
 
