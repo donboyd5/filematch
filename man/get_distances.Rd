@@ -4,7 +4,7 @@
 \alias{get_distances}
 \title{Get k nearest neighbors for each of two dataframes}
 \usage{
-get_distances(afile, bfile, xvars, k = NULL)
+get_distances(afile, bfile, xvars, ka = NULL, kb = NULL)
 }
 \arguments{
 \item{afile}{Dataframe with xvars; other columns allowed.}
@@ -13,7 +13,9 @@ get_distances(afile, bfile, xvars, k = NULL)
 
 \item{xvars}{Character vector of column names.}
 
-\item{k}{Integer scalar: number of nearest neighbors to get distances for.}
+\item{ka}{Integer scalar: number of nearest neighbors to get from the afile.}
+
+\item{kb}{Integer scalar: number of nearest neighbors to get from the bfile.}
 }
 \value{
 A list with two elements, each of which has two matrices. The elements are dbtoa (distance from B donor records to A recipient records) and datob (distance from A donor to B recipient). Each element has two matrices, a matrix of indexes for the nearest neighbors and a matrix with distances.
@@ -25,6 +27,6 @@ Get k nearest neighbors of afile and k nearest neighbors of bfile, based on dist
 data(afile)
 data(bfile)
 xvars <- c("age", "hoursworked", "income")
-res <- get_distances(afile, bfile, xvars, k = 10)
+res <- get_distances(afile, bfile, xvars, ka = 10, kb=20)
 str(res)
 }

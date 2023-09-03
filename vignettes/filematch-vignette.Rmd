@@ -81,7 +81,19 @@ res <- matchab(afile=afile,
                xvars=xvars,
                yvars=yvars,
                zvars=zvars,
-               k=100)
+               ka=NULL, 
+               kb=NULL)
+
+# res <- matchab(afile=afile,
+#                bfile=bfile,
+#                idvar="pid",
+#                wtvar="weight",
+#                xvars=xvars,
+#                yvars=yvars,
+#                zvars=zvars,
+#                ka=100, 
+#                kb=100)
+
 ```
 
 What was returned?

@@ -126,6 +126,25 @@ get_arcs <- function(dbtoa, datob, nodes) {
 }
 
 
+#' Determine k: number of nearest neighbors to find
+#'
+#' @param nrows Integer scalar: number of records in the A (donor) file
+#'
+#' @return Integer scalar: number of nearest neighbors to find
+#' @export
+#'
+#' @examples
+#' get_k(1000)
+#' get_k(nrow(afile))
+get_k <- function(nrows){
+  maxk <- 1000
+
+  k <- 5 + round(sqrt(nrows))
+  k <- min(k, nrows)
+  k
+}
+
+
 #' Get k nearest neighbors for each of two dataframes
 #'
 #' @description
@@ -135,7 +154,8 @@ get_arcs <- function(dbtoa, datob, nodes) {
 #' @param afile Dataframe with xvars; other columns allowed.
 #' @param bfile Dataframe with xvars; other columns allowed.
 #' @param xvars Character vector of column names.
-#' @param k     Integer scalar: number of nearest neighbors to get distances for.
+#' @param ka    Integer scalar: number of nearest neighbors to get from the afile.
+#' @param kb    Integer scalar: number of nearest neighbors to get from the bfile.
 #'
 #' @return A list with two elements, each of which has two matrices. The elements are dbtoa (distance from B donor records to A recipient records) and datob (distance from A donor to B recipient). Each element has two matrices, a matrix of indexes for the nearest neighbors and a matrix with distances.
 #' @export
@@ -144,19 +164,25 @@ get_arcs <- function(dbtoa, datob, nodes) {
 #' data(afile)
 #' data(bfile)
 #' xvars <- c("age", "hoursworked", "income")
-#' res <- get_distances(afile, bfile, xvars, k = 10)
+#' res <- get_distances(afile, bfile, xvars, ka = 10, kb=20)
 #' str(res)
-get_distances <- function(afile, bfile, xvars, k = NULL) {
+get_distances <- function(afile, bfile, xvars, ka = NULL, kb=NULL) {
   # determine how many near-neighbors to get, if not specified
-  if (is.null(k)) {
-    maxrecs <- max(nrow(afile), nrow(bfile))
-    minrecs <- min(nrow(afile), nrow(bfile))
-    k <- round(maxrecs) * .05
-    k <- min(k, 1000) # k can never be more than 1000
-    k <- max(k, 10) # k always must be at least 10
-    k <- min(k, minrecs) # but k cannot be less than the number of rows in the shorter file
-  }
-  print(paste0("k: ", k))
+  if (is.null(ka)) ka <- get_k(nrow(afile))
+  if (is.null(kb)) kb <- get_k(nrow(bfile))
+
+  # if (is.null(k)) {
+  #   maxrecs <- max(nrow(afile), nrow(bfile))
+  #   minrecs <- min(nrow(afile), nrow(bfile))
+  #   k <- round(maxrecs) * .05
+  #   k <- min(k, 1000) # k can never be more than 1000
+  #   k <- max(k, 10) # k always must be at least 10
+  #   k <- min(k, minrecs) # but k cannot be less than the number of rows in the shorter file
+  # }
+  print(paste0("ka: ", ka))
+  print(paste0("kb: ", kb))
+  # ka <- 100
+  # kb <- 100
 
   # distance computations:
   # scale input data to mean=0, sd=1 before computing distances
@@ -174,7 +200,7 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
     # select(!!xvars) also works
     bfile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
     afile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
-    k = k, algorithm = "brute"
+    k = kb, algorithm = "brute"
   )
 
   # k nearest distances for donating from file A to file B (datob)
@@ -183,7 +209,7 @@ get_distances <- function(afile, bfile, xvars, k = NULL) {
   datob <- FNN::get.knnx(
     afile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
     bfile |> dplyr::select(tidyselect::all_of(xvars)) |> scale(),
-    k = k, algorithm = "brute"
+    k = ka, algorithm = "brute"
   )
 
   return(list(dbtoa = dbtoa, datob = datob))
@@ -304,7 +330,8 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
 #' @param idvar Character column name
 #' @param wtvar Character column name
 #' @param xvars Character vector of column names
-#' @param k Integer number of nearest neighbors to find
+#' @param ka    Integer scalar: number of nearest neighbors to get from the afile.
+#' @param kb    Integer scalar: number of nearest neighbors to get from the bfile.
 #'
 #' @return a list with nodes, arcs, and preptime
 #' @export
@@ -312,7 +339,8 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
 #' @examples
 #' library(filematch)
 #' data(afile)
-prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
+prepab <- function(afile, bfile, idvar, wtvar, xvars,
+                   ka = NULL, kb = NULL) {
   a <- proc.time()
 
   # flows are from B to A
@@ -373,7 +401,7 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
     ))
 
   # get distances
-  dists <- get_distances(afile1, bfile1, xvars, k)
+  dists <- get_distances(afile1, bfile1, xvars, ka=ka, kb=kb)
 
   nodes <- get_nodes(afile1, bfile1)
   arcs <- get_arcs(dbtoa = dists$dbtoa, datob = dists$datob, nodes = nodes)
@@ -393,7 +421,8 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
 #' @param xvars Character vector of column names
 #' @param yvars Character vector of column names
 #' @param zvars Character vector of column names
-#' @param k k Integer number of nearest neighbors to find
+#' @param ka    Integer number of nearest neighbors to find in A file
+#' @param kb    Integer number of nearest neighbors to find in B file
 #'
 #' @return list with prep_list, mcfresult, and abfile
 #' @export
@@ -401,14 +430,16 @@ prepab <- function(afile, bfile, idvar, wtvar, xvars, k = NULL) {
 #' @examples
 #' library(filematch)
 #' data(afile)
-matchab <- function(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL) {
+matchab <- function(afile, bfile, idvar, wtvar, xvars, yvars, zvars,
+                    ka = NULL, kb = NULL) {
   print("preparing nodes and arcs...")
   prep_list <- prepab(afile,
     bfile,
     idvar = idvar,
     wtvar = wtvar,
     xvars = xvars,
-    k = k
+    ka = ka,
+    kb = kb
   )
   print(paste0("# seconds to prepare nodes and arcs: ", round(prep_list$preptime, 3)))
 

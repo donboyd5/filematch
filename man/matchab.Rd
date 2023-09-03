@@ -4,7 +4,7 @@
 \alias{matchab}
 \title{Match A and B files}
 \usage{
-matchab(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL)
+matchab(afile, bfile, idvar, wtvar, xvars, yvars, zvars, ka = NULL, kb = NULL)
 }
 \arguments{
 \item{afile}{Dataframe ...}
@@ -21,7 +21,9 @@ matchab(afile, bfile, idvar, wtvar, xvars, yvars, zvars, k = NULL)
 
 \item{zvars}{Character vector of column names}
 
-\item{k}{k Integer number of nearest neighbors to find}
+\item{ka}{Integer number of nearest neighbors to find in A file}
+
+\item{kb}{Integer number of nearest neighbors to find in B file}
 }
 \value{
 list with prep_list, mcfresult, and abfile

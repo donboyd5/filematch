@@ -3,6 +3,7 @@
 export(get_abfile)
 export(get_arcs)
 export(get_distances)
+export(get_k)
 export(get_nodes)
 export(matchab)
 export(prepab)
