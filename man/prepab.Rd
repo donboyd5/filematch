@@ -4,7 +4,7 @@
 \alias{prepab}
 \title{Prepare the afile and bfile}
 \usage{
-prepab(afile, bfile, idvar, wtvar, xvars, k = NULL)
+prepab(afile, bfile, idvar, wtvar, xvars, ka = NULL, kb = NULL)
 }
 \arguments{
 \item{afile}{Dataframe...}
@@ -17,7 +17,9 @@ prepab(afile, bfile, idvar, wtvar, xvars, k = NULL)
 
 \item{xvars}{Character vector of column names}
 
-\item{k}{Integer number of nearest neighbors to find}
+\item{ka}{Integer scalar: number of nearest neighbors to get from the afile.}
+
+\item{kb}{Integer scalar: number of nearest neighbors to get from the bfile.}
 }
 \value{
 a list with nodes, arcs, and preptime
