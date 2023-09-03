@@ -62,7 +62,7 @@ get_arcs <- function(dbtoa, datob, nodes) {
     datob_arcs |>
       dplyr::mutate(src = "atob")
   ) |>
-    dplyr::select(.data$a_row, .data$b_row, .data$neighbor, .data$dist, .data$src)
+    dplyr::select("a_row", "b_row", "neighbor", "dist", "src")
 
   # keeping the neighbor number can help in figuring out the quality of a match
   # the fastest way I could find to do this is
@@ -71,20 +71,20 @@ get_arcs <- function(dbtoa, datob, nodes) {
   # note that I waste some memory by creating interim files
 
   arcs_distinct <- arcs1 |>
-    dplyr::select(.data$a_row, .data$b_row, .data$dist) |>
+    dplyr::select("a_row", "b_row", "dist") |>
     dplyr::distinct()
 
   arcs_neighbors <- arcs_distinct |>
     dplyr::left_join(
       arcs1 |> dplyr::filter(.data$src == "btoa") |>
-        dplyr::select(.data$a_row, .data$b_row, btoa_neighbor = .data$neighbor),
+        dplyr::select("a_row", "b_row", "btoa_neighbor" = "neighbor"),
       by = c("a_row", "b_row")
     ) |>
     # by = dplyr::join_by(
     #   x$a_row==y$a_row, x$b_row==y$b_row)) |>
     dplyr::left_join(
       arcs1 |> dplyr::filter(.data$src == "atob") |>
-        dplyr::select(.data$a_row, .data$b_row, atob_neighbor = .data$neighbor),
+        dplyr::select("a_row", "b_row", "atob_neighbor" = "neighbor"),
       by = c("a_row", "b_row")
     ) |>
     # by = dplyr::join_by(x$a_row==y$a_row, x$b_row==y$b_row)) |>
