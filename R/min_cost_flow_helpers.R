@@ -227,6 +227,10 @@ get_nodes <- function(afile, bfile) {
 #' data(afile)
 get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yvars, zvars) {
   print("preparing base abfile...")
+
+  # create an interleaved vector of xvars and the b xvars, to make them easy to view later
+  ilxvars <- c(rbind(xvars, paste0("b_", xvars)))
+
   abfile <- arcs |>
     dplyr::mutate(weight = flows) |>
     dplyr::filter(.data$weight > 0) |> # drop potential matches that weren't used
@@ -270,6 +274,7 @@ get_abfile <- function(arcs, nodes, flows, afile, bfile, idvar, wtvar, xvars, yv
     ) |>
     # move variables around so that it is easier visually to compare the afile xvars to the bfile xvars
     dplyr::relocate(dist, .after = paste0("b_", idvar)) |>  # rlang::sym(paste0("b_", idvar))) |>
+    dplyr::relocate(tidyselect::all_of(ilxvars), .after = tidyselect::last_col()) |> # interleaved xvars
     dplyr::relocate(tidyselect::all_of(yvars), .after = tidyselect::last_col()) |>
     dplyr::relocate(tidyselect::all_of(zvars), .after = tidyselect::last_col()) |>
     dplyr::arrange(.data$anode, .data$dist)
