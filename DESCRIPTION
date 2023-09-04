@@ -18,11 +18,14 @@ Config/testthat/edition: 3
 Imports: 
     dplyr,
     FNN,
+    Rcpp,
     rlang,
     rlemon,
     stats,
     tibble,
     tidyselect
+LinkingTo: 
+    Rcpp    
 Depends: 
     R (>= 2.10)
 LazyData: true

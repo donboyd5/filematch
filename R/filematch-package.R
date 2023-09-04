@@ -2,9 +2,12 @@
 "_PACKAGE"
 
 ## usethis namespace: start
+#' @importFrom Rcpp sourceCpp
 #' @importFrom rlang .data
 #' @importFrom rlang :=
 #' @importFrom stats dist
 #' @importFrom stats setNames
+#' @useDynLib filematch
+#' @useDynLib filematch, .registration = TRUE
 ## usethis namespace: end
 NULL
