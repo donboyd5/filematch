@@ -1,9 +1,19 @@
 // the following rcpp code is based on the commented-out julia code after the function, which was
 // translated to c++ by chatGPT and then I fixed some errors by chatGPT
 
+
+
+
 #include <Rcpp.h>
 using namespace Rcpp;
 
+//' Good approach
+//'
+//' Fast matching of records
+//' @param adf a dataframe
+//' @param bdf a dataframe
+//' @return ab dataframe
+//' @export
 // [[Rcpp::export]]
 DataFrame matchrecs(DataFrame adf, DataFrame bdf) {
 
