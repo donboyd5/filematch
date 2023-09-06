@@ -10,21 +10,27 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// matchrecs
-DataFrame matchrecs(DataFrame adf, DataFrame bdf);
-RcppExport SEXP _filematch_matchrecs(SEXP adfSEXP, SEXP bdfSEXP) {
+// internal_matchrecs
+DataFrame internal_matchrecs(DataFrame adf, DataFrame bdf, std::string vida, std::string vidb, std::string vweighta, std::string vweightb, std::string vranka, std::string vrankb);
+RcppExport SEXP _filematch_internal_matchrecs(SEXP adfSEXP, SEXP bdfSEXP, SEXP vidaSEXP, SEXP vidbSEXP, SEXP vweightaSEXP, SEXP vweightbSEXP, SEXP vrankaSEXP, SEXP vrankbSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< DataFrame >::type adf(adfSEXP);
     Rcpp::traits::input_parameter< DataFrame >::type bdf(bdfSEXP);
-    rcpp_result_gen = Rcpp::wrap(matchrecs(adf, bdf));
+    Rcpp::traits::input_parameter< std::string >::type vida(vidaSEXP);
+    Rcpp::traits::input_parameter< std::string >::type vidb(vidbSEXP);
+    Rcpp::traits::input_parameter< std::string >::type vweighta(vweightaSEXP);
+    Rcpp::traits::input_parameter< std::string >::type vweightb(vweightbSEXP);
+    Rcpp::traits::input_parameter< std::string >::type vranka(vrankaSEXP);
+    Rcpp::traits::input_parameter< std::string >::type vrankb(vrankbSEXP);
+    rcpp_result_gen = Rcpp::wrap(internal_matchrecs(adf, bdf, vida, vidb, vweighta, vweightb, vranka, vrankb));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_filematch_matchrecs", (DL_FUNC) &_filematch_matchrecs, 2},
+    {"_filematch_internal_matchrecs", (DL_FUNC) &_filematch_internal_matchrecs, 8},
     {NULL, NULL, 0}
 };
 

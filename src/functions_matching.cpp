@@ -2,29 +2,36 @@
 // translated to c++ by chatGPT and then I fixed some errors by chatGPT
 
 
-
-
 #include <Rcpp.h>
 using namespace Rcpp;
 
 //' Good approach
 //'
 //' Fast matching of records
-//' @param adf a dataframe
-//' @param bdf a dataframe
+//' @param adf dataframe with A records
+//' @param bdf dataframe with B records
+//' @param vida string, A id variable name default "ida"
+//' @param vidb string, b id variable name default "idb"
+//' @param vweighta string, A weight variable name default "weighta"
+//' @param vweightb string, B weight variable name default "weightb"
+//' @param vranka string, A rank variable name default "ranka"
+//' @param vrankb string, B rank variable name default "rankb"
 //' @return ab dataframe
 //' @export
 // [[Rcpp::export]]
-DataFrame matchrecs(DataFrame adf, DataFrame bdf) {
+DataFrame internal_matchrecs(DataFrame adf, DataFrame bdf,
+                             std::string vida = "ida", std::string vidb = "idb",
+                             std::string vweighta = "weighta", std::string vweightb = "weightb",
+                             std::string vranka = "ranka", std::string vrankb = "rankb") {
 
   // Extracting columns
-  IntegerVector ida = adf["ida"];
-  NumericVector weighta = adf["weighta"];
-  NumericVector ranka = adf["ranka"];
+  IntegerVector ida = adf[vida];
+  NumericVector weighta = adf[vweighta];
+  NumericVector ranka = adf[vranka];
 
-  IntegerVector idb = bdf["idb"];
-  NumericVector weightb = bdf["weightb"];
-  NumericVector rankb = bdf["rankb"];
+  IntegerVector idb = bdf[vidb];
+  NumericVector weightb = bdf[vweightb];
+  NumericVector rankb = bdf[vrankb];
 
   int ia = 0; // 0-based in C++
   int ib = 0;
@@ -66,9 +73,9 @@ DataFrame matchrecs(DataFrame adf, DataFrame bdf) {
     }
   }
 
-  return DataFrame::create(_["ida"]=records_ida, _["idb"]=records_idb,
+  return DataFrame::create(_[vida]=records_ida, _[vidb]=records_idb,
                            _["weight"]=records_weight,
-                           _["ranka"]=records_ranka, _["rankb"]=records_rankb);
+                           _[vranka]=records_ranka, _[vrankb]=records_rankb);
 }
 
 
