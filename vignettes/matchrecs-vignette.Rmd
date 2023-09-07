@@ -22,8 +22,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(filematch)
 library(tidyverse)
-# library(StatMatch)
-# library(clue)
+
 ```
 
 View data for the A and B files.

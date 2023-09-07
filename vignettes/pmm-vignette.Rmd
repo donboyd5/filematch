@@ -1,0 +1,82 @@
+---
+title: "pmm-vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{pmm-vignette}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(filematch)
+library(tidyverse)
+```
+
+Define the variable groups for the A and B files.
+
+```{r define_variable_groups}
+idvars <- c("pid", "weight") # common to A and B
+xvars <- c("age", "hoursworked", "income") # common to A and B
+yvars <- c("socsec", "selfemploy") # only in A: different kinds of income
+zvars <- c("interest", "pension", "wages") # only in B: different kinds of income
+```
+
+```{r data}
+afile
+
+amod <- lm(income ~ age + hoursworked, data=afile)
+summary(amod)
+
+afile2 <- afile |> 
+  rename(weighta=weight) |> 
+  mutate(rowa=row_number(),
+         preda=predict(amod)) |> 
+  arrange(desc(preda))
+summary(afile2)
+
+bmod <- lm(income ~ age + hoursworked, data=bfile)
+summary(bmod)
+
+bfile2 <- bfile |> 
+  rename(weightb=weight) |> 
+  mutate(rowb=row_number(),
+         predb=predict(bmod)) |> 
+  arrange(desc(predb))
+summary(bfile2)
+
+ab <- matchrecs(afile2, bfile2,
+                vida="rowa", vidb="rowb",
+                vweighta="weighta", vweightb="weightb",
+                vranka="preda", vrankb="predb") |> 
+  arrange(rowa, desc(predb))
+
+```
+
+
+```{r mergeback}
+
+abmrg <- ab |> 
+  left_join(afile2 |> 
+              select(-preda), join_by(rowa)) |> 
+  left_join(bfile2 |> 
+              select(-predb), join_by(rowb),
+            suffix = c("", "_b")) |> 
+  select(pid_a=pid, pid_b, rowa, rowb,
+         weighta, weightb, weight,
+         preda, predb,
+         starts_with("income"),
+         starts_with("age"),
+         starts_with("hours"),
+         everything())
+
+```
+
