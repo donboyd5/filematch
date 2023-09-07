@@ -2,6 +2,7 @@
 "_PACKAGE"
 
 ## usethis namespace: start
+#' @importFrom dplyr arrange
 #' @importFrom Rcpp sourceCpp
 #' @importFrom rlang .data
 #' @importFrom rlang :=
